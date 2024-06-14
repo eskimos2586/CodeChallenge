@@ -1,20 +1,35 @@
 ﻿@page "/nuevoAnimal"
 @inject CodeChallenge.Data.ZoologicoServicio _zoologicoServicio
+@using CodeChallenge.Data.Model
+@using CodeChallenge.Data.Enums
+@using CodeChallenge.Data.ViewModel
 
 <h3>Nuevo Animal</h3>
+@if (mostrarError)
+{
+    <div class="alert alert-danger" role="alert">
+        Se supera el límite de alimento mensual.
+    </div>
+}
+@if (mostrarConfirmacion)
+{
+    <div class="alert alert-success" role="alert">
+        Animal agregado correctamente.
+    </div>
+}
 <EditForm Model="@animal" OnValidSubmit="AgregarAnimal">
     <div class="form-group row justify-content-center">
         <div class="col-8">
             <div class="card">
                 <div class="card-body">
                     <div class="form-group row justify-content-center">
-                        <div class="col-2">
+                        <div class="col-3">
                             <label class="col-form-label">Tipo</label>
                         </div>
                         <div class="col-4">
                             <select @bind="animal.Tipo" class="form-control">
                                 <option value="">-- Seleccionar Tipo --</option>
-                                @foreach (var tipo in _tipos)
+                                @foreach (TipoAnimal tipo in Enum.GetValues(typeof(TipoAnimal)))
                                 {
                                     <option value="@tipo">@tipo</option>
                                 }
@@ -22,7 +37,7 @@
                         </div>
                     </div>
                     <div class="form-group row justify-content-center">
-                        <div class="col-2">
+                        <div class="col-3">
                             <label class="col-form-label">Especie</label>
                         </div>
                         <div class="col-4">
@@ -30,7 +45,7 @@
                         </div>
                     </div>
                     <div class="form-group row justify-content-center">
-                        <div class="col-2">
+                        <div class="col-3">
                             <label class="col-form-label">Edad</label>
                         </div>
                         <div class="col-4">
@@ -38,7 +53,7 @@
                         </div>
                     </div>
                     <div class="form-group row justify-content-center">
-                        <div class="col-2">
+                        <div class="col-3">
                             <label class="col-form-label">Lugar de Origen</label>
                         </div>
                         <div class="col-4">
@@ -46,32 +61,49 @@
                         </div>
                     </div>
                     <div class="form-group row justify-content-center">
-                        <div class="col-2">
+                        <div class="col-3">
                             <label class="col-form-label">Peso</label>
                         </div>
                         <div class="col-4">
                             <input type="number" class="form-control" @bind="animal.Peso" />
                         </div>
                     </div>
-                    <div class="form-group row justify-content-center">
-                        <div class="col-2">
-                            <label class="col-form-label">Porcentaje</label>
+                    @if (animal.Tipo == TipoAnimal.Reptil)
+                    {
+                        <div class="form-group row justify-content-center">
+                            <div class="col-3">
+                                <label class="col-form-label">Dias cambio de piel</label>
+                            </div>
+                            <div class="col-4">
+                                <input type="number" class="form-control" @bind="animal.DiasCambioPiel" />
+                            </div>
                         </div>
-                        <div class="col-4">
-                            <input type="number" class="form-control" @bind="animal.Porcentaje" />
+                    }
+                    @if (animal.Tipo == TipoAnimal.Carnivoro || animal.Tipo == TipoAnimal.Reptil)
+                    {
+                        <div class="form-group row justify-content-center">
+                            <div class="col-3">
+                                <label class="col-form-label">Porcentaje</label>
+                            </div>
+                            <div class="col-4">
+                                <input type="number" class="form-control" @bind="animal.Porcentaje" />
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-group row justify-content-center">
-                        <div class="col-2">
-                            <label class="col-form-label">Kilos</label>
+                    }
+                    @if (animal.Tipo == TipoAnimal.Herbivoro)
+                    {
+                        <div class="form-group row justify-content-center">
+                            <div class="col-3">
+                                <label class="col-form-label">Kilos Alimento</label>
+                            </div>
+                            <div class="col-4">
+                                <input type="number" class="form-control" @bind="animal.Kilos" />
+                            </div>
                         </div>
-                        <div class="col-4">
-                            <input type="number" class="form-control" @bind="animal.Kilos" />
-                        </div>
-                    </div>
+                    }
                     <div class="form-group row">
                         <div class="col-12 d-flex justify-content-center">
-                            <button type="button" class="btn btn-success" @onclick="AgregarAnimal">Agregar</button>
+                            <button type="submit" class="btn btn-success">Agregar</button>
                         </div>
                     </div>
                 </div>
@@ -79,18 +111,83 @@
         </div>
     </div>
 </EditForm>
+
 @code {
-    private List<string> _tipos;
-    protected CodeChallenge.Data.Model.Animal animal = new Data.Model.Animal();
+    private List<TipoAnimal> _tipos;
+    private bool mostrarConfirmacion = false;
+    private bool mostrarError = false;
+    protected AnimalViewModel animal = new AnimalViewModel();
 
     private void AgregarAnimal()
     {
-        _zoologicoServicio.AgregarAnimal(animal);
+        var nuevoAnimal = ObtenerAnimalPorTipo();
+        if (!_zoologicoServicio.SuperaLimiteAlimentoMensual(nuevoAnimal))
+        {
+            _zoologicoServicio.AgregarAnimal(nuevoAnimal);
+            mostrarConfirmacion = true;
+        }
+        else
+        {
+            mostrarError = true;
+        }
+
+        ResetearFormulario();
     }
 
-    protected override Task OnInitializedAsync()
+    private Animal ObtenerAnimalPorTipo()
     {
-        _tipos = _zoologicoServicio.TiposAnimales;
-        return base.OnInitializedAsync();
+        switch (animal.Tipo)
+        {
+            case TipoAnimal.Carnivoro:
+                return new Carnivoro
+                    {
+                        FechaIngreso = DateTime.Now,
+                        Especie = animal.Especie,
+                        Edad = animal.Edad,
+                        LugarOrigen = animal.LugarOrigen,
+                        Peso = animal.Peso,
+                        Porcentaje = animal.Porcentaje / 100
+                    };
+            case TipoAnimal.Herbivoro:
+                return new Herbivoro
+                    {
+                        FechaIngreso = DateTime.Now,
+                        Especie = animal.Especie,
+                        Edad = animal.Edad,
+                        LugarOrigen = animal.LugarOrigen,
+                        Peso = animal.Peso,
+                        Kilos = animal.Kilos
+                    };
+            case TipoAnimal.Reptil:
+                return new Reptil
+                    {
+                        FechaIngreso = DateTime.Now,
+                        Especie = animal.Especie,
+                        Edad = animal.Edad,
+                        LugarOrigen = animal.LugarOrigen,
+                        Peso = animal.Peso,
+                        Porcentaje = animal.Porcentaje / 100,
+                        DiasCambioPiel = animal.DiasCambioPiel
+                    };
+            default:
+                throw new InvalidOperationException("Tipo de animal no válido");
+        }
+    }
+
+    private async void ResetearFormulario()
+    {
+        if (!mostrarError)
+        {
+            animal = new AnimalViewModel();
+        }
+        await Task.Delay(3000);
+        mostrarConfirmacion = false;
+        mostrarError = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _tipos = Enum.GetValues(typeof(TipoAnimal)).Cast<TipoAnimal>().ToList();
     }
 }

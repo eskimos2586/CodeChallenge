@@ -1,0 +1,49 @@
+﻿@page "/listarAnimales"
+@using CodeChallenge.Data.Model
+@inject CodeChallenge.Data.ZoologicoServicio _zoologicoServicio
+<h3>Listado de Animales</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Fecha de Ingreso</th>
+            <th>Especie</th>
+            <th>Tipo</th>
+            <th>Edad (Años)</th>
+            <th>Lugar de Origen</th>
+            <th>Peso (Kg.)</th>
+            <th>Porcentaje</th>
+            <th>Kilos</th>
+            <th>Días Cambio Piel</th>
+            <th>Consumo de Carne (Kg.)</th>
+            <th>Consumo de Hierbas (Kg.)</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var animal in Animales)
+        {
+            <tr>
+                <td>@animal.FechaIngreso</td>
+                <td>@animal.Especie</td>
+                <td>@(animal.GetType().Name)</td>
+                <td>@animal.Edad</td>
+                <td>@animal.LugarOrigen</td>
+                <td>@animal.Peso</td>
+                <td>@(animal is CarnivoroReptil cr ? cr.Porcentaje * 100 : 0)</td>
+                <td>@(animal is Herbivoro h ? h.Kilos : 0)</td>
+                <td>@(animal is Reptil r ? r.DiasCambioPiel : 0)</td>
+                <td>@Math.Round(_zoologicoServicio.CalcularConsumoCarne(animal), 2)</td>
+                <td>@Math.Round(_zoologicoServicio.CalcularConsumoHierbas(animal), 2)</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<Animal> Animales { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Animales = _zoologicoServicio.ObtenerAnimales();
+    }
+}

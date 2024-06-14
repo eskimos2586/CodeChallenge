@@ -1,0 +1,31 @@
+﻿@page "/totales"
+@using CodeChallenge.Data.Model
+@inject CodeChallenge.Data.ZoologicoServicio _zoologicoServicio
+
+<h3>Consumo Mensual de Alimentos</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Total Carne (Kg.)</th>
+            <th>Total Hierbas (Kg.)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>@Math.Round(TotalCarne, 2)</td>
+            <td>@Math.Round(TotalHierbas, 2)</td>
+        </tr>
+    </tbody>
+</table>
+
+@code {
+    private decimal TotalCarne { get; set; }
+    private decimal TotalHierbas { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        TotalCarne = _zoologicoServicio.CalcularConsumoMensualCarne();
+        TotalHierbas = _zoologicoServicio.CalcularConsumoMensualHierbas();
+    }
+}
